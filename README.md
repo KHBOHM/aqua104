@@ -1,15 +1,15 @@
 # Aqua104
 
-🌊 **Aqua104 – Sistema de procesamiento y envío de datos IEC 60870-5-104**  
-Proyecto de soporte para dispositivos IoT de monitoreo hidráulico utilizado por AQUA-DATA GmbH.
+💧 **Aqua104 – Processing and preparing IoT water-flow data for SCADA transmission (IEC 60870-5-104)**  
+This repository contains the Python module used to decode, aggregate, and prepare hydraulic flow data collected from IoT metering devices.
 
 ---
 
-## 🌐 Documentación
+## 📄 Documentation
 
-### 🇪🇸 Español  
+### 🇪🇸 Spanish  
 👉 [README.es.md](README.es.md)
 
-*(Próximamente se agregarán versiones en inglés y alemán.)*
+*(Additional language versions may be added later.)*
 
 ---
