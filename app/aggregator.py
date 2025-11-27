@@ -1,28 +1,47 @@
 from datetime import datetime, timedelta
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
-def aggregate_series(
-    series: List[Tuple[datetime, int]],
-    window_minutes: int
+def aggregate_by_window(
+    raw_series: List[Tuple[datetime, int]],
+    window_minutes: int,
+    from_dt: datetime,
+    to_dt: datetime
 ) -> List[Tuple[datetime, float]]:
-    if not series or window_minutes <= 0:
+    """
+    Promedio la serie minuto a minuto en bloques consecutivos de window_minutes,
+    y etiqueto cada promedio con la hora real de inicio del bloque.
+    """
+    if window_minutes <= 0 or from_dt >= to_dt:
         return []
 
-    aggregated = []
-    block = []
-    block_start = series[0][0]
+    # Convierto la serie a un diccionario para acceder por timestamp en O(1).
+    series_by_timestamp: Dict[datetime, int] = {
+        timestamp: value for timestamp, value in raw_series
+    }
 
-    for ts, val in series:
-        block.append(val)
-        elapsed = int((ts - block_start).total_seconds() // 60) + 1
-        if elapsed >= window_minutes:
-            avg = sum(block) / len(block)
-            aggregated.append((block_start, avg))
-            block = []
-            block_start = ts + timedelta(minutes=1)
+    aggregated_series: List[Tuple[datetime, float]] = []
+    block_start_time = from_dt
 
-    if block:
-        avg = sum(block) / len(block)
-        aggregated.append((block_start, avg))
+    while block_start_time < to_dt:
+        block_values: List[int] = []
 
-    return aggregated
+        # Recorro los minutos que forman el bloque actual.
+        for minute_offset in range(window_minutes):
+            current_time = block_start_time + timedelta(minutes=minute_offset)
+            if current_time >= to_dt:
+                break
+
+            # El blob no debe tener huecos, pero lo dejo robusto igual.
+            value = series_by_timestamp.get(current_time)
+            if value is not None:
+                block_values.append(value)
+
+        if block_values:
+            block_average = sum(block_values) / len(block_values)
+            aggregated_series.append((block_start_time, block_average))
+
+        # Paso al siguiente bloque.
+        block_start_time += timedelta(minutes=window_minutes)
+
+    return aggregated_series
+

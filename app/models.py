@@ -1,5 +1,9 @@
 from sqlalchemy.orm import declarative_base, relationship
-from sqlalchemy import (create_engine, Column, Integer, Float, SmallInteger, String, Boolean, LargeBinary, BigInteger, TIMESTAMP, PrimaryKeyConstraint, ForeignKeyConstraint)
+from sqlalchemy import (
+    Column, Integer, Float, SmallInteger, String, Boolean, LargeBinary, BigInteger, 
+    TIMESTAMP, PrimaryKeyConstraint, ForeignKeyConstraint, DateTime, Index 
+)
+from datetime import datetime
 
 Base = declarative_base()
 
@@ -40,10 +44,12 @@ class Iec104Config(Base):
     __tablename__ = "iec104_config"
     device_id = Column(Integer, nullable=False)
     counter_id = Column(Integer, nullable=False)
-    server_ip = Column(String(100), nullable=False)
-    server_port = Column(Integer, default=2404)
+    remote_ip_1 = Column(String(100), nullable=False)
+    remote_ip_2 = Column(String(100), nullable=False)
+    local_port = Column(Integer, default=2404)
     common_address = Column(Integer, nullable=False)
     information_object_address = Column(Integer, nullable=False)
+    information_object_address_start = Column(Integer, nullable=False)
     send_interval = Column(Integer, default=60)
     enabled = Column(Boolean, default=True)
     flow_unit = Column(String(20), default="l/min")
@@ -70,3 +76,28 @@ class Iec104Config(Base):
             return [int(p) for p in self.agg_periods.split("|") if p.strip().isdigit()]
         except Exception:
             return []
+
+class Iec104AggregatedData(Base):
+    __tablename__ = 'iec104_aggregated_data'
+    
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # CLAVE DE IDENTIFICACIÓN (para IEC-104)
+    common_address = Column(Integer, nullable=False) # ASDU
+    ioa_address = Column(Integer, nullable=False, index=True) # IOA ÚNICA (ej. 100, 101, 102)
+    
+    # El DATO (lo que se envía)
+    timestamp_start = Column(DateTime, nullable=False, index=True) # Hora de inicio del bloque
+    value = Column(Float, nullable=False)                          # Valor promedio y convertido
+    
+    # METADATOS
+    period_minutes = Column(Integer) # 3, 15 o 60 (para referencia)
+    
+    # Gestión de Envío (necesario para la Interrogación General)
+    sent_on_gi = Column(Boolean, default=False) # Flag: ¿Ya se envió en una GI?
+    created_at = Column(DateTime, default=datetime.now)
+
+    # Creamos un índice compuesto para consultas rápidas
+    __table_args__ = (
+        Index('idx_asdu_ioa_ts', 'common_address', 'ioa_address', 'timestamp_start'),
+    )
